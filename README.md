@@ -1,2 +1,0 @@
-# Solfejo
-Exercícios de Solfejo

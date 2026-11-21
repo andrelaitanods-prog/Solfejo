@@ -308,11 +308,12 @@ button.holding{background-image:linear-gradient(90deg,rgba(255,255,255,.55),rgba
   <div class="card hide" id="stats"></div>
   <details class="card"><summary>⚙ Ajustes</summary><div class="row" style="margin-top:10px">
     <label><input type="checkbox" id="anyoct"> Aceitar qualquer oitava</label>
-    <label>Voz <select id="voice"><option value="w">Como escrito</option><option value="m">Masculina (uma oitava abaixo)</option></select></label>
+    <label>Voz <select id="voice"><option value="w">Aguda — soprano, contralto, criança (como escrito)</option><option value="m">Grave — tenor, barítono, baixo (uma oitava abaixo)</option></select></label>
+    <label>Segurar a nota <select id="holdt"><option value="1500">1,5 s</option><option value="3000">3 s</option><option value="5000">5 s</option><option value="10000">10 s</option><option value="20000">20 s</option><option value="30000">30 s</option></select></label>
     <label>Sensibilidade <input type="range" id="gain" min="1" max="12" step="0.5" value="4"></label>
     <label>Afinação <select id="temp"><option value="j">Justa</option><option value="t">Temperada</option></select></label>
     <label>Tolerância <select id="tol"><option value="10">Rigorosa (±10 cents)</option><option value="15">Intermediária (±15 cents)</option><option value="20" selected>Normal (±20 cents)</option></select></label>
-    <label><input type="checkbox" id="ns" checked> Anti-ruído do navegador</label>
+    <label title="Deixe desligado para cantar: o anti-ruído do navegador costuma abafar notas longas e faz o ponteiro pular."><input type="checkbox" id="ns"> Anti-ruído do navegador (só em ambiente barulhento)</label>
     <label><input type="checkbox" id="shownum" checked> Números</label>
     <label><input type="checkbox" id="shownames" checked> Nomes</label></div></details>
 </div>
@@ -392,7 +393,7 @@ const MAJ=[0,2,4,5,7,9,11],NAT=MAJ;
 const SC={'Maior':MAJ,'menor primitiva':[0,2,3,5,7,8,10],'menor harmônica':[0,2,3,5,7,8,11],'menor melódica':[0,2,3,5,7,9,11],'Maior harmônica':[0,2,4,5,7,8,11],'Maior melódica':[0,2,4,5,7,8,10],'Dórico':[0,2,3,5,7,9,10],'Frígio':[0,1,3,5,7,8,10],'Lídio':[0,2,4,6,7,9,11],'Mixolídio':[0,2,4,5,7,9,10]};
 const NOMES=['Dó','Ré','Mi','Fá','Sol','Lá','Si'];
 // [nome, letra da tônica (0=Dó), alteração, nota MIDI da tônica]
-const KEYS=[['Dó',0,0,60],['Ré♭',1,-1,61],['Ré',1,0,62],['Mi♭',2,-1,63],['Mi',2,0,64],['Fá',3,0,65],['Fá♯',3,1,66],['Sol',4,0,55],['Lá♭',5,-1,56],['Lá',5,0,57],['Si♭',6,-1,58],['Si',6,0,59],['Dó♭',0,-1,59],['Dó♯',0,1,61]];
+const KEYS=[['Dó',0,0,60],['Ré♭',1,-1,61],['Ré',1,0,62],['Mi♭',2,-1,63],['Mi',2,0,64],['Fá',3,0,65],['Fá♯',3,1,66],['Sol',4,0,55],['Lá♭',5,-1,56],['Lá',5,0,57],['Si♭',6,-1,58],['Si',6,0,59],['Dó♭',0,-1,59],['Dó♯',0,1,61],['Sol♭',4,-1,54]];
 const SHP=[38,35,39,36,33,37,34],FLT=[34,37,33,36,32,35,31];
 // Exercícios do módulo 1 (graus; ^ oitava acima; :2 mínima, :1 semibreve). 2º valor = tonalidade original
 const BOOK=[
@@ -438,7 +439,39 @@ const BOOK4=[
 ['1:2 7_ | 1:2 3 | 5:2 3 | 1:2 | 5:2 1^ | 7:2 1^ | 5:2 7_ | 1:2',10],
 ['1 3 1 7_ | 1:2 7_ 1 | 3 5 1^ 7 | 1^:2 5 5 | 1^ 7 1^ 5 | 7_ 5 3 1^ | 5 3 1 7_ | 1:2',11]];
 // Aula 4 (partitura enviada): pausas omitidas; ex. 9 e 10 em 3/4
-const BKS=j=>{const b=MODS[j==null?mi:j].book;return b===2?BOOK2:b===3?BOOK3:b===4?BOOK4:BOOK};
+// Aula 6 – 2º grau (livro p. 33–34): pausas omitidas; marcas "x" do livro ignoradas; ex. 8 em 3/4
+const BOOK5=[
+['1:1 | 2:1 | 1:1 | 5:1 | 2:1 | 7_:1 | 1:1 | 5:1 | 7:1 | 2^:1 | 1^:1 | 5:1 | 2:1 | 3:1 | 7_:1 | 1:1',0],
+['1:1 | 2:1 | 7_:1 | 2:1 | 1:1 | 5:1 | 3:1 | 2:1 | 5:1 | 3:1 | 1^:1 | 7:1 | 2^:1 | 5:1 | 1^:1 | 7:1 | 2^:1 | 1^:1 | 2:1 | 5:1 | 3:1 | 7:1 | 1^:1 | 2:1 | 3:1 | 7_:1 | 5:1 | 1^:1',0],
+['1 3 2 7_ | 1 2 5 3 | 7 1^ 2^ 1^ | 5 2 3 5 | 7_ 2 5 1^',2],
+['1^ 5 1^ 7 | 2^ 1^ 3^ 5^ | 3^ 2^ 5 7 | 2^ 3^ 1^ 2^ | 7 1^ 5 3^ | 2^ 7 1^:2',9],
+['1^ 7 2^ 1^ | 5 2 3 1 | 5 7 5 1^ | 5 3^ 1^ 2^ | 5 1^ 3^ 7 | 2^ 1^ 5 2^ | 1^ 1',10],
+['1 5 2 3 | 1 7 5 1^ | 7 5 2 5 | 3 5 3 7_ | 2 1',3],
+['1^ 7 2^ 5^ | 3^ 1^ 2^ 5^ | 7 1^ 2^ 3^ | 7 5^ 2^ 3^ | 5^ 5 2^ 7 | 2^ 1^',7],
+['1:2 7_ | 1:2 3 | 3:2 2 | 1:2 | 3:2 5 | 1^:2 2^ | 3^:2 7 | 1^:2 | 5:2 3 | 2:2 7_ | 1:2 5 | 3:2 | 2:2 5 | 7:2 2^ | 1^:2 5 | 1:3',9],
+['1 3 5 5 | 5 3 5:2 | 1^ 7 1^ 5 | 3 2 1:2 | 2 3 1 5_ | 1 5 3^:2 | 2^ 5 1^ 1^ | 5 3 1:2',11]];
+// Aula 8 – 4º grau (livro p. 37–38): ex. 6 em Si maior (o MuseScore leu 5 bemóis); ex. 9 em Fá, com ritmo
+const BOOK6=[
+['1:1 | 5:1 | 4:1 | 5:1 | 1:1 | 1^:1 | 4:1 | 3:1 | 7_:1 | 2:1 | 4:1 | 3:1 | 7:1 | 4:1 | 5:1 | 7_:1 | 1:1',0],
+['1:1 | 4:1 | 1^:1 | 2:1 | 7:1 | 4:1 | 2^:1 | 5_:1 | 4:1 | 2:1 | 7:1 | 1^:1 | 2:1 | 1^:1 | 4:1 | 3:1 | 1:1',0],
+['1 3 4 3 | 1 4 3 2 | 5 3 1^ 5 | 7 1^ 2 4 | 3 7_ 1 5 | 2 4 3 1^',10],
+['1 4 7_ 5 | 2 4 3 5 | 7 1^ 4 3 | 5 2 3 5 | 1 4 2 7_ | 1 4 3 5 | 1^ 5 1',4],
+['1^ 3^ 7 2^ | 1^ 4^ 2^ 3^ | 2^ 4^ 5 7 | 1^ 4^ 3^ 2^ | 5^ 5 4 5 | 3 5 7 1^ | 2^ 4^ 2^ 7 | 5 2^ 1^ 3^ | 7 1^',8],
+['1^ 5 2^ 1^ | 4^ 3^ 2^ 7 | 1^ 4 3 5 | 2 4 3 2 | 1 4 2 5 | 3 7 1^ 5 | 1^ 1^',11],
+['1 5 4 3 | 5 2 3 1^ | 5 2^ 1^ 4 | 3 1 4 7_ | 5 2 1^ 4 | 3 5 4 3 | 7 4 3 1',1],
+['1 2 3 5 | 2 4 3 7_ | 2 1 5 7 | 1^ 5 4 5 | 3 2 4 2 | 1 2 3 2 | 1 2 3 4 | 5 2 4 3 | 4 5 7 1^ | 2 1 4 3 | 5 3 2 1 | 2 4 7_ 1',3],
+['1:2 1 1 | 7_:2 5_:2 | 1:2 1 1 | 7_:2 5_:2 | 2 2 7_ 7_ | 1:3 | 1 3 3 5 | 5 4 2:2 | 1 3 3 5 | 5 4 2:2 | 1 2 1 5_ | 1 7_ 5_:2 | 1 5 3 7_ | 1 7_ 5_:2 | 2 5_ 7_ 5_ | 1:3',5]];
+// Aula 10 – 6º grau (livro p. 41–42): ex. 4 Fá♯, ex. 5 Dó♯, ex. 6 Sol♭, ex. 7 Dó♭ (armaduras conferidas no livro)
+const BOOK7=[
+['1:1 | 5:1 | 6:1 | 5:1 | 1^:1 | 3:1 | 6:1 | 2:1 | 3:1 | 6_:1 | 2:1 | 4:1 | 6:1 | 1:1',0],
+['1:1 | 6:1 | 2^:1 | 3:1 | 2:1 | 6:1 | 7_:1 | 3:1 | 6:1 | 2^:1 | 4:1 | 2:1 | 7_:1 | 6:1 | 1:1',0],
+['1 3 5 6 | 1 6 5 6 | 7 1^ 6 1^ | 6 5 2 6 | 1 6 3 6 | 5 1^ 6 1^ | 4 2 6 1 | 1:2',10],
+['5_ 1 3 2 | 7_ 1 6 5 | 4 2 3 1 | 7_ 2 5_ 3 | 6_ 2 1 4 | 2 5 4 6 | 5 6_ 7_ 1 | 3 6 5 3 | 6 7_ 1:2',6],
+['5 1 7_ 1 | 2 6 2 3 | 5 1^ 6 4 | 1^ 6 5 3 | 1^ 4 3 5 | 2 5 7 2^ | 1^ 6 2 5 | 7 1^ 4 3 | 1 6 5 1',13],
+['1^ 5 1^ 2^ | 6 7 3^ 7 | 1^ 3^ 6^ 5^ | 3^ 5 3^ 2^ | 4^ 6 1^ 3^ | 2^ 5 6^ 4^ | 3^ 5^ 6 4^ | 7 3^ 1^',14],
+['5 1^ 3 2 | 6 5 1 4 | 3 2 7 1^ | 6 7 5 1^ | 3^ 2^ 7 6 | 1^ 7 4 6 | 3 5 2 1 | 6 5 2 1',12],
+['1^ 4^ 3^ 5^ | 1^ 2^ 4^ 7 | 6 5 1^ 7 | 1^ 2^ 3^ 5^ | 1^ 4^ 3^ 2^ | 7 6 7 5 | 4^ 2^ 1^ 2^ | 5 1^ 2^ 3^ | 4^ 5^ 3^ 1^ | 2^ 3^ 1^ 6 | 4^ 7 1^',8]];
+const BKS=j=>{const b=MODS[j==null?mi:j].book;return b===2?BOOK2:b===3?BOOK3:b===4?BOOK4:b===5?BOOK5:b===6?BOOK6:b===7?BOOK7:BOOK};
 const W1=[['Aula 1 – Escala Maior – 1º, 3º e 5º grau','1 3 5 1^ | 1^ 5 3 1'],['Aula 2 – 3º agudo e 5º grave','1 3 5 1^ 3^ 1^ 5 3 1 5_ 1']];
 const WSENS=[['Aula 4 – 7º grau (Sensível)','1 3 5 1^ 7 1^ 5 3 1 7_ 1']];
 const WSUP=[['Aula 6 – 2º grau (Supertônica)','1 2 1 3 5 1^ 2^ 1^ 5 3 1 2 1']];
@@ -450,11 +483,11 @@ const MODS=[
  {t:'Aula 3 – Solfejo Atonal - Terça maior e menor, Quinta justa e Oitava Justa',p:'27 e 37',au:'3',deg:[1,3,5],leaps:[2,4,7],book:2,at:1},
  {t:'Aula 4 – Solfejo Tonal - 7º grau - Sensível',p:'47',au:'4',deg:[1,3,5,7],leaps:[1,2,3],wu:WSENS,book:4},
  {t:'Aula 5 – Solfejo Atonal - Segunda menor',p:'50',au:'5',deg:[1,3,5,7],leaps:[1,2],at:1},
- {t:'Aula 6 – Solfejo Tonal - 2º grau - Supertônica',p:'55',au:'6',deg:[1,2,3,5,7],leaps:[1,2,3],wu:WSUP},
+ {t:'Aula 6 – Solfejo Tonal - 2º grau - Supertônica',p:'55',au:'6',deg:[1,2,3,5,7],leaps:[1,2,3],wu:WSUP,book:5},
  {t:'Aula 7 – Solfejo Atonal - Segunda maior',p:'59',au:'7',deg:[1,2,3,5,7],leaps:[1,2],at:1},
- {t:'Aula 8 – Solfejo Tonal - 4º grau - Subdominante',p:'65',au:'8',deg:[1,2,3,4,5,7],leaps:[1,2,3],wu:WSUB},
+ {t:'Aula 8 – Solfejo Tonal - 4º grau - Subdominante',p:'65',au:'8',deg:[1,2,3,4,5,7],leaps:[1,2,3],wu:WSUB,book:6},
  {t:'Aula 9 – Solfejo Atonal - Quarta Justa',p:'69',au:'9',deg:[1,2,3,4,5,7],leaps:[3,2,1],at:1},
- {t:'Aula 10 – Solfejo Tonal - 6º grau - Superdominante',p:'76',au:'10',deg:[1,2,3,4,5,6,7],leaps:[1,2,3],wu:WSDM},
+ {t:'Aula 10 – Solfejo Tonal - 6º grau - Superdominante',p:'76',au:'10',deg:[1,2,3,4,5,6,7],leaps:[1,2,3],wu:WSDM,book:7},
  {t:'Aula 11 – Solfejo Atonal - Sexta maior',p:'80',au:'11',deg:[1,2,3,4,5,6,7],leaps:[5,2,1],at:1},
  {t:'Aula 12 – Solfejo Tonal - Melodias formadas por graus conjuntos',p:'86',au:'12',deg:[1,2,3,4,5,6,7],leaps:[1]},
  {t:'Aula 13 – Clave de Fá na 4ª linha',p:'90 e 92',au:'13',deg:[1,2,3,4,5,6,7],leaps:[1,2,3],clef:'bass'},
@@ -493,9 +526,9 @@ const MODS=[
 const CL={treble:{g:'𝄞',bot:30,gy:104,fs:76,gx:14,sh:0},bass:{g:'𝄢',bot:18,gy:82,fs:60,gx:16,sh:-14},alto:{g:'𝄡',bot:24,gy:88,fs:62,gx:16,sh:-7}};
 
 /* ---------- Estado ---------- */
-let mi=0,mode='ex',items=[],bars=[],cur=0,status=[],rec=[],holdStart=0,scName='Maior',clef='treble',wuIdx=0,curKey=0,curStr='',bi=-1,bat=null,noteStart=0,off=0,offSum=0,offCnt=0;
+let mi=0,mode='ex',items=[],bars=[],cur=0,status=[],rec=[],holdStart=0,holdAcc=0,holdLast=0,scName='Maior',clef='treble',wuIdx=0,curKey=0,curStr='',bi=-1,bat=null,noteStart=0,off=0,offSum=0,offCnt=0;
 let ctx=null,analyser=null,buf=null,running=false,loopOn=false,muteUntil=0,micGain=null,lastSeen=0,hl=-1,playing=false,timers=[];
-let TOL=20,ZOOM=1;try{ZOOM=Math.min(2.2,Math.max(.6,+localStorage.getItem('solfejo-zoom')||1))}catch(e){}const HOLD=1500,PASS=0.95;let lastIn=0;let XP=0,DB=null,UID=null,UP=null,rkUnsub=null,lastH=0,mg=null,lastBi=0,rt=null,rm='free';const BEATS={4:1,3:3,2:2,1:4};
+let TOL=20,ZOOM=1;try{ZOOM=Math.min(2.2,Math.max(.6,+localStorage.getItem('solfejo-zoom')||1))}catch(e){}let HOLD=1500;try{HOLD=Math.min(30000,Math.max(1500,+localStorage.getItem('solfejo-hold')||1500))}catch(e){}const PASS=0.95;let lastIn=0;let XP=0,DB=null,UID=null,UP=null,rkUnsub=null,lastH=0,mg=null,lastBi=0,rt=null,rm='free';const BEATS={4:1,3:3,2:2,1:4};
 let prog={};try{prog=JSON.parse(localStorage.getItem('solfejo-med2')||'{}')}catch(e){}prog=migProg(prog);try{localStorage.setItem('solfejo-med2',JSON.stringify(prog))}catch(e){}
 /* v2: entrou a Aula 2 (3º agudo e 5º grave); as aulas a partir da antiga posição 1 andam uma casa */
 function migProg(o){if(!o||typeof o!=='object')return{__v:2};if(o.__v>=2)return o;const n={__v:2};for(const k in o){if(k==='__v')continue;const i=+k;n[Number.isInteger(i)&&i>=1?i+1:k]=o[k]}return n}
@@ -646,7 +679,7 @@ function draw(){
     const up=d>0,mj=a===4,t=mj?(up?'DO–MI':'MI–DO'):(up?'MI–SOL':'SOL–MI'),col=mj?'var(--ok)':'var(--acc)',y0=OY[i]+144,cross=OY[i]!==OY[i+1],x1=XS[i]+4,x2=cross?Math.min(LW-14,x1+46):XS[i+1]-4,xm=(x1+x2)/2;
     h+=`<path d="M${x1} ${y0-9}V${y0-5}H${x2}${cross?'':`V${y0-9}`}" fill="none" stroke="${col}" stroke-width="1.5" opacity=".75"/><text x="${cross?x1:xm}" y="${y0+9}" text-anchor="${cross?'start':'middle'}" font-size="12.5" font-weight="900" fill="${col}">${up?'↗':'↘'} ${t}${cross?' ›':''}</text>`}
   svg.setAttribute('viewBox',`0 0 ${LW} ${sys.length*SYS+6+LG}`);svg.style.minWidth='';svg.innerHTML=h;
-  $('target').textContent=cur<n?label(items[cur])+' · '+nameOf(items[cur])+(()=>{const mm=midi(items[cur])-($('voice').value==='m'?12:0);return String(Math.floor(mm/12)-1)})()+($('anyoct').checked?' (qualquer oitava)':''):'✓';
+  $('target').textContent=cur<n?label(items[cur])+' · '+nameOf(items[cur])+(()=>{const mm=midi(items[cur])-need(items[cur])-($('voice').value==='m'?12:0);return String(Math.floor(mm/12)-1)})()+($('anyoct').checked?' (qualquer oitava)':''):'✓';
   updScore();
 }
 function updScore(){
@@ -694,7 +727,7 @@ function setup(str,m){
   if(playing)stopSeq();
   const v=+$('key').value;curKey=v<0?BKS()[bi>=0?bi:lastBi][1]:v;
   rt=null;stopMetro();$('go').textContent='▶ Começar';curStr=str;const r=toks2items(str);items=r.its;bars=r.bs;cur=0;status=items.map(()=> 'p');rec=items.map(()=>({e:0,s:0,c:0}));
-  holdStart=0;noteStart=performance.now();off=0;mode=m;$('hold').style.width='0';$('res').classList.add('hide');
+  holdStart=holdAcc=0;noteStart=performance.now();off=0;mode=m;$('hold').style.width='0';$('res').classList.add('hide');
   draw();setMsg(rm==='rhythm'?'Modo ritmo: toque em Começar (4 tempos de contagem).':running?'Cante a primeira nota.':'Ative o microfone na tela de módulos.');
 }
 function startWarm(k){
@@ -778,22 +811,34 @@ $('res').onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
   else if(a==='new'||a==='rev')startEx()};
 
 /* ---------- Detecção de altura ---------- */
-let nf=0,lastF=0,stab=0;
-function detect(b,sr){const f=detect0(b,sr);if(f<0){stab=0;lastF=0;return -1}if(lastF&&Math.abs(1200*Math.log2(f/lastF))<70)stab++;else stab=0;lastF=f;return stab>=2?f:-1}
+/* YIN (de Cheveigné & Kawahara) em sinal reduzido pela metade + refinamento na taxa cheia,
+   mediana das últimas leituras para o ponteiro não pular. Faixa: ~50 Hz (Sol1) a ~1100 Hz. */
+let nf=0,lastF=0,stab=0,fh=[],miss=0,yd=null,ydn=null;
+function detect(b,sr){const f=detect0(b,sr);
+  if(f<0){if(++miss>4){fh.length=0;lastF=0;stab=0}return -1}
+  miss=0;const m=69+12*Math.log2(f/440);
+  /* salto isolado (oitava errada, ruído): ignora até se repetir 3 vezes; aí é uma nota nova */
+  if(fh.length&&Math.abs(m-med(fh))>1.5){stab++;if(stab<3)return fh.length>=3?440*Math.pow(2,(med(fh)-69)/12):-1;fh.length=0}
+  stab=0;fh.push(m);if(fh.length>7)fh.shift();if(fh.length<3)return -1;
+  lastF=440*Math.pow(2,(med(fh)-69)/12);return lastF}
+function med(a){const c=a.slice().sort((x,y)=>x-y),n=c.length;return n%2?c[n>>1]:(c[n/2-1]+c[n/2])/2}
 function detect0(b,sr){
   let e=0;for(let i=0;i<b.length;i++)e+=b[i]*b[i];
-  const rms=Math.sqrt(e/b.length),cap=0.003;if(!nf)nf=Math.min(rms,cap);else if(rms<nf*1.5)nf=nf*.95+rms*.05;else nf=Math.min(cap,nf*1.0005);if(rms<Math.max(0.004,nf*2.8))return -1;
-  const minL=Math.floor(sr/1000),maxL=Math.min(Math.floor(sr/70),b.length>>1);
-  const W=b.length-maxL,r=new Float32Array(maxL+2);
-  let e0=0;for(let i=0;i<W;i++)e0+=b[i]*b[i];
-  let best=0;
-  for(let l=minL;l<=maxL;l++){let c=0,el=0;for(let i=0;i<W;i++){c+=b[i]*b[i+l];el+=b[i+l]*b[i+l]}
-    r[l]=c/Math.sqrt(e0*el+1e-9);if(r[l]>best)best=r[l]}
-  if(best<0.7)return -1;
-  for(let l=minL+1;l<maxL;l++){
-    if(r[l]>=best*0.93&&r[l]>=r[l-1]&&r[l]>=r[l+1]){const a=r[l-1],bb=r[l],c=r[l+1],d=a-2*bb+c;return sr/(l+(d?0.5*(a-c)/d:0))}
-  }
-  return -1;
+  const rms=Math.sqrt(e/b.length),cap=0.003;if(!nf)nf=Math.min(rms,cap);else if(rms<nf*1.5)nf=nf*.95+rms*.05;else nf=Math.min(cap,nf*1.0005);if(rms<Math.max(0.0025,nf*2.5))return -1;
+  const D=sr>30000?2:1,N=Math.floor(b.length/D);if(!yd||yd.length!==N)yd=new Float32Array(N);
+  for(let i=0;i<N;i++){let x=0;for(let k=0;k<D;k++)x+=b[i*D+k];yd[i]=x/D}
+  const s2=sr/D,minT=Math.max(2,Math.floor(s2/1100)),maxT=Math.min(Math.floor(s2/50),N>>1),W=N-maxT;
+  if(!ydn||ydn.length<maxT+2)ydn=new Float32Array(maxT+2);
+  const d=ydn;d[0]=1;let run=0;
+  for(let t=1;t<=maxT;t++){let q=0;for(let i=0;i<W;i++){const x=yd[i]-yd[i+t];q+=x*x}run+=q;d[t]=run>0?q*t/run:1}
+  let tau=-1;
+  for(let t=minT;t<=maxT;t++)if(d[t]<0.15){while(t<maxT&&d[t+1]<d[t])t++;tau=t;break}
+  if(tau<0){let mn=1,mt=-1;for(let t=minT;t<=maxT;t++)if(d[t]<mn){mn=d[t];mt=t}if(mn>0.35)return -1;tau=mt}
+  /* refinamento na taxa original: mínimo da diferença e interpolação parabólica */
+  const c0=tau*D,M=b.length-c0-D-2,df=l=>{let q=0;for(let i=0;i<M;i++){const x=b[i]-b[i+l];q+=x*x}return q};
+  let bl=c0,bv=df(c0);for(let l=Math.max(2,c0-D);l<=c0+D;l++){if(l===c0)continue;const v=df(l);if(v<bv){bv=v;bl=l}}
+  const a=df(bl-1),cc=df(bl+1),den=a-2*bv+cc,sh=den>0?Math.max(-.5,Math.min(.5,0.5*(a-cc)/den)):0;
+  return sr/(bl+sh);
 }
 const CHROMA=['Dó','Dó♯','Ré','Ré♯','Mi','Fá','Fá♯','Sol','Sol♯','Lá','Lá♯','Si'];
 function loop(){
@@ -811,17 +856,18 @@ function loop(){
     else{const o=Math.round(cents/1200);if(o!==0&&Math.abs(cents-o*1200)<=Math.max(TOL*2,70))octOff=o}
     setN(octOff?null:cents);
     if(Math.abs(cents)<=TOL){
-      off=0;lastIn=now;if(!holdStart)holdStart=now;
-      const p=Math.min(1,(now-holdStart)/HOLD);$('hold').style.width=(p*100)+'%';
-      setMsg('Afinado! Segure por '+Math.max(0,(HOLD-(now-holdStart))/1000).toFixed(1).replace('.',',')+' s…','var(--ok)');
+      off=0;if(!holdStart){holdStart=now;holdLast=now}holdAcc+=Math.min(120,now-holdLast);holdLast=now;lastIn=now;
+      const p=Math.min(1,holdAcc/HOLD);$('hold').style.width=(p*100)+'%';
+      setMsg('Afinado! Segure por '+Math.max(0,(HOLD-holdAcc)/1000).toFixed(1).replace('.',',')+' s…','var(--ok)');
       if(p>=1){
         status[cur]='ok';const hitM=midi(items[cur]);record(cur);cur++;
-        holdStart=0;$('hold').style.width='0';noteStart=now;off=0;
+        holdStart=holdAcc=0;$('hold').style.width='0';noteStart=now;off=0;
         okSound(hitM);if(cur>=items.length){draw();finish()}else{draw();setMsg('Muito bem! Próxima nota.','var(--ok)')}
       }
-    }else if(holdStart&&now-lastIn<260){/* oscilação breve da voz: mantém a contagem */}
+    }else if(holdStart&&now-lastIn<400){/* oscilação breve da voz: mantém a contagem */holdAcc+=Math.min(120,now-holdLast);holdLast=now}
     else{
-      holdStart=0;$('hold').style.width='0';
+      /* nota curta (1,5 s): desafinou, recomeça. Nota longa: a contagem só pausa enquanto estiver desafinado */
+      if(HOLD<=1500){holdStart=holdAcc=0;$('hold').style.width='0'}else if(holdStart){holdLast=now;$('hold').style.width=(Math.min(1,holdAcc/HOLD)*100)+'%'}
       if(now-noteStart>700){
         if(!off){off=now;offSum=0;offCnt=0}offSum+=cents;offCnt++;
         const r=rec[cur];if(!r.e&&now-off>2000){r.e=1;r.s=offSum/offCnt;r.c=1;draw()}
@@ -829,8 +875,8 @@ function loop(){
       if(octOff){const tm=midi(items[cur])-(male?12:0),tn=CHROMA[((tm%12)+12)%12]+(Math.floor(tm/12)-1);setMsg((octOff>0?'Oitava errada: está uma oitava acima. ':'Oitava errada: está uma oitava abaixo. ')+'A nota pedida é '+tn+(male?' (para voz masculina)':'')+'.','var(--bad)')}
       else setMsg(cents>0?'Um pouco agudo — desça a afinação.':'Um pouco grave — suba a afinação.','var(--bad)');
     }
-  }else if(holdStart&&now-lastSeen<200){/* falha breve */}
-  else{off=0;holdStart=0;$('hold').style.width='0';$('heard').textContent='—';setN(null);if(cur<items.length)setMsg('Cante a nota destacada…')}
+  }else if(holdStart&&now-lastSeen<(HOLD>1500?900:350)){/* falha breve (ou respiração curta em nota longa) */holdLast=now}
+  else{off=0;holdStart=holdAcc=0;$('hold').style.width='0';$('heard').textContent='—';setN(null);if(cur<items.length)setMsg('Cante a nota destacada…')}
   requestAnimationFrame(loop);
 }
 function ensureLoop(){if(running&&!loopOn&&!$('mod').classList.contains('hide')){loopOn=true;loop()}}
@@ -1089,7 +1135,7 @@ async function checkNews(){if(!DB||!DB.collection)return;try{const s=await DB.co
 $('profbtn').onclick=showProf;$('profback').onclick=()=>{$('prof').classList.add('hide');$('home').classList.remove('hide');home()};$('pplback').onclick=()=>{if(pplUnsub){pplUnsub();pplUnsub=null}$('ppl').classList.add('hide');$('home').classList.remove('hide');home()};
 $('rkbtn').onclick=showRank;
 $('rkback').onclick=()=>{if(rkUnsub){rkUnsub();rkUnsub=null}$('rank').classList.add('hide');$('home').classList.remove('hide');home()};
-function setN(c){const n=$('needle');sn+=((c==null?0:Math.max(-100,Math.min(100,c)))-sn)*(c==null?.12:.22);n.style.transform='rotate('+Math.max(-85,Math.min(85,sn/TOL*17)).toFixed(1)+'deg)';$('gauge').classList.toggle('in',c!=null&&Math.abs(c)<=TOL)}
+function setN(c){const n=$('needle');sn+=((c==null?0:Math.max(-100,Math.min(100,c)))-sn)*(c==null?.1:.16);n.style.transform='rotate('+Math.max(-85,Math.min(85,sn/TOL*17)).toFixed(1)+'deg)';$('gauge').classList.toggle('in',c!=null&&Math.abs(c)<=TOL)}
 /* ---------- Sons de interface (estilo console) ---------- */
 function sfx(t){if(!(window.AudioContext||window.webkitAudioContext))return;ac();const n=ctx.currentTime;
   const P={tick:[[1900,0,.035,.07]],ok:[[1568,0,.05,.1],[2349,.06,.09,.1]],back:[[1175,0,.05,.09],[784,.06,.08,.09]],hov:[[880,0,.09,.008]]}[t];
@@ -1142,8 +1188,9 @@ function ac(){if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)()
 async function loadPiano(){pLoad=1;try{const a=[];for(const b of PIANO){const u=Uint8Array.from(atob(b),c=>c.charCodeAt(0));a.push(await ctx.decodeAudioData(u.buffer))}PB=a}catch(e){PB=[]}}
 function pianoF(fr,vol,dur){if(!PB.length||!ctx)return false;const m=69+12*Math.log2(fr/440),z=PZ.find(q=>m<=q[0]+.5)||PZ[12],t=ctx.currentTime+.01,sr=ctx.createBufferSource(),g=ctx.createGain();
   sr.buffer=PB[z[2]];sr.playbackRate.value=fr/f2m(z[1]);g.gain.setValueAtTime(vol,t);g.gain.setTargetAtTime(0,t+dur,.15);sr.connect(g).connect(ctx.destination);sr.start(t);sr.stop(t+dur+1.2);return true}
+function vOct(){return $('voice').value==='m'?.5:1}
 function toneF(fr){
-  ac();const T=performance.now()+1500;muteUntil=Math.max(muteUntil,T);noteStart=Math.max(noteStart,T);holdStart=0;off=0;$('hold').style.width='0';if(pianoF(fr,.8,1.5))return;const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=fr;
+  fr*=vOct();ac();const T=performance.now()+1500;muteUntil=Math.max(muteUntil,T);noteStart=Math.max(noteStart,T);holdStart=holdAcc=0;off=0;$('hold').style.width='0';if(pianoF(fr,.8,1.5))return;const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=fr;
   g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(.25,ctx.currentTime+.03);g.gain.linearRampToValueAtTime(0,ctx.currentTime+1.1);
   o.connect(g).connect(ctx.destination);o.start();o.stop(ctx.currentTime+1.15);
 }
@@ -1195,7 +1242,7 @@ function playSeq(){
   let t=100;
   items.forEach((it,i)=>{
     if(bars.includes(i))t+=280;
-    const tt=t;timers.push(setTimeout(()=>{hl=i;draw();piano(midi(it))},tt));t+=620*(it.du===2?1.6:it.du===3?2:it.du===1?2.4:1);
+    const tt=t;timers.push(setTimeout(()=>{hl=i;draw();piano(midi(it)-(vOct()<1?12:0))},tt));t+=620*(it.du===2?1.6:it.du===3?2:it.du===1?2.4:1);
   });
   muteUntil=performance.now()+t+2500;timers.push(setTimeout(stopSeq,t+900));
 }
@@ -1692,6 +1739,8 @@ const unlock=()=>{if(audioOK&&!pendingGreet&&!pendingSR)return;audioOK=true;try{
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ctx&&ctx.state==='suspended')ctx.resume()});
 /* microfone do solfejo (afinação) — corrigido para celular */
 try{$('voice').value=localStorage.getItem('solfejo-voice')||'w';$('anyoct').checked=localStorage.getItem('solfejo-anyoct')==='1'}catch(e){}
+try{$('holdt').value=String(HOLD)}catch(e){}
+$('holdt').onchange=()=>{HOLD=+$('holdt').value;try{localStorage.setItem('solfejo-hold',HOLD)}catch(e){}toast('Segurar cada nota por '+(HOLD/1000).toString().replace('.',',')+' s.')};
 $('voice').onchange=()=>{try{localStorage.setItem('solfejo-voice',$('voice').value)}catch(e){}try{draw()}catch(e){}};$('anyoct').onchange=()=>{try{localStorage.setItem('solfejo-anyoct',$('anyoct').checked?'1':'0')}catch(e){}try{draw()}catch(e){}};
 $('mic').onclick=async()=>{const set=t=>$('micst').textContent=t;
  micBusy=true;
@@ -1702,10 +1751,10 @@ $('mic').onclick=async()=>{const set=t=>$('micst').textContent=t;
   await new Promise(r=>setTimeout(r,isTouch?450:120));
   if(!window.isSecureContext)throw{name:'Insecure'};
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw{name:'NoAPI'};
-  let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:$('ns').checked,noiseSuppression:$('ns').checked,autoGainControl:true}})}catch(e){if(e&&(e.name==='NotAllowedError'||e.name==='SecurityError'))throw e;st=await navigator.mediaDevices.getUserMedia({audio:true})}
+  let st;try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:$('ns').checked,noiseSuppression:$('ns').checked,autoGainControl:$('ns').checked,channelCount:1}})}catch(e){if(e&&(e.name==='NotAllowedError'||e.name==='SecurityError'))throw e;st=await navigator.mediaDevices.getUserMedia({audio:true})}
   if(ctx.state!=='running')await ctx.resume();
   analyser=ctx.createAnalyser();analyser.fftSize=4096;micGain=ctx.createGain();micGain.gain.value=+$('gain').value;
-  const src=ctx.createMediaStreamSource(st),hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=70;lp.type='lowpass';lp.frequency.value=1800;src.connect(hp);hp.connect(lp);lp.connect(micGain);micGain.connect(analyser);nf=0;buf=new Float32Array(analyser.fftSize);
+  const src=ctx.createMediaStreamSource(st),hp=ctx.createBiquadFilter(),lp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=42;lp.type='lowpass';lp.frequency.value=1800;src.connect(hp);hp.connect(lp);lp.connect(micGain);micGain.connect(analyser);nf=0;buf=new Float32Array(analyser.fftSize);
   micStream=st;st.getTracks().forEach(t=>{t.onended=()=>{running=false;micBusy=false;$('mic').disabled=false;$('mic').textContent='Ativar microfone';set('O microfone foi interrompido. Toque para ativar de novo.')}});
   running=true;micBusy=false;micWant=true;try{localStorage.setItem('solfejo-micwant','1')}catch(e){}micTrack=st.getAudioTracks()[0];deadSince=0;ensureLoop();$('mic').disabled=true;$('mic').textContent='Microfone ativo';set('Escolha um módulo.');
  }catch(e){micBusy=false;autoFailAt=Date.now();const n=e&&e.name;set(n==='Insecure'||n==='NoAPI'?'O microfone só funciona em página segura (https). Hospede o arquivo em https; arquivo local no celular não funciona.':n==='NotAllowedError'||n==='SecurityError'?'Microfone bloqueado. Toque no cadeado ao lado do endereço, permita o microfone e tente de novo (se estiver dentro de um quadro, abra em aba própria).':n==='NotFoundError'?'Nenhum microfone encontrado.':n==='NotReadableError'?'O microfone está em uso por outro app ou aba. Feche-o e tente de novo.':'Não consegui acessar o microfone ('+(n||'erro')+'). Se estiver abrindo por dentro de outro app (WhatsApp, Instagram), abra no Chrome ou Safari.')}};
@@ -1715,7 +1764,7 @@ function releaseMic(why){
   micTrack=null;try{if(micGain)micGain.disconnect()}catch(e){}
   if(running){running=false;const b=$('mic');b.disabled=false;b.textContent='Ativar microfone';try{$('micst').textContent=why||'Microfone liberado. Toque em "Ativar microfone" para continuar.'}catch(e){}}
   micBusy=false}
-addEventListener('pagehide',()=>releaseMic());addEventListener('beforeunload',()=>releaseMic());
+window.releaseMic=releaseMic;addEventListener('pagehide',()=>releaseMic());addEventListener('beforeunload',()=>releaseMic());
 function stopSR(){try{if(recg){recg.onend=null;recg.abort?recg.abort():recg.stop()}}catch(e){}listening=false;starting=false;try{micUI(false)}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseMic('Microfone desligado ao sair do aplicativo. Ele volta sozinho quando você voltar.');stopSR();try{stopSpeak()}catch(e){}}else setTimeout(autoMic,500)});
 addEventListener('pagehide',stopSR);
@@ -2325,7 +2374,8 @@ function bdModal(){const n=new Date(),A=[].concat(NB.map(x=>({...x,t:'nascimento
 $('bdm').onclick=bdModal;bdHome();
 })();
 
-$('ns').onchange=()=>{if(running){try{micTrack&&micTrack.stop()}catch(e){}running=false;$('mic').disabled=false;$('mic').click()}};
+try{$('ns').checked=localStorage.getItem('solfejo-ns2')==='1'}catch(e){$('ns').checked=false}
+$('ns').onchange=()=>{try{localStorage.setItem('solfejo-ns2',$('ns').checked?'1':'0')}catch(e){}if(running){try{window.releaseMic()}catch(e){}setTimeout(()=>$('mic').click(),150)}};
 
 /* ---------- partida ---------- */
 setInterval(tmTick,1000);setInterval(remNow,15000);setTimeout(remNow,2500);tmUI();
